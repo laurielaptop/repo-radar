@@ -10,3 +10,5 @@ For private repositories, create a fine-grained personal access token with Metad
 OAuth sign-in is not included: this requires registering a GitHub OAuth App and adding a server callback with secure session cookies. No OAuth client secret should be placed in this static site. This version is already generic for any user with a username or token.
 
 Check: `npm run check`.
+
+Use **Sign out of GitHub** to clear the in-memory token, account fields, loaded repositories and filters, and return to the sample workspace. This disconnects the dashboard; it does not revoke the token or sign you out of github.com or the separate ChatGPT site-access gate. The control is briefly disabled during a fetch so an in-flight result cannot restore a signed-out workspace.
