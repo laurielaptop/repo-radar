@@ -23,3 +23,5 @@
 [data-theme="dark"] input::placeholder{color:#9caba2}
 @media(max-width:700px){.header-right{gap:8px}.theme-toggle{padding:8px;font-size:11px}header{padding-left:16px;padding-right:16px}.header-right .primary{padding:10px;font-size:11px}.header-right #disconnect{font-size:10px;padding:8px}.brand{font-size:18px}.logo{margin-right:5px;font-size:26px}}
 @media(max-width:420px){header{height:auto;min-height:76px;flex-wrap:wrap;gap:10px;padding-top:12px;padding-bottom:12px}.header-right{flex-wrap:wrap}}
+
+.issue-status{font-size:11px;margin-top:5px}.issue-status b{font-weight:600}

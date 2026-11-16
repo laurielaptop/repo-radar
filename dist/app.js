@@ -1,11 +1,11 @@
 const $=id=>document.getElementById(id),DAY=86400000;
 let host=githubHost('');
 let token='',username='',mode='demo',filter='all',busy=false;
-let repos=[['atlas-web','A considered home for ideas, notes, and things worth sharing.',12,3,0,false],['design-system','Components, tokens, and a shared design language.',4,2,1,true],['pocket-journal','A small space for everyday thoughts.',0,1,2,true],['api-gateway','One entry point for the services behind the scenes.',8,2,3,true],['weekend-experiments','Little ideas that might turn into something.',3,0,5,false],['dotfiles','Making a new machine feel like home.',0,0,12,false],['old-portfolio','An earlier chapter, kept for the memories.',0,0,80,false]].map(([name,description,issues,milestones,days,isPrivate])=>({name,description,issues,milestones,isPrivate,updatedAt:new Date(Date.now()-days*DAY).toISOString(),owner:'demo',demo:true}));
+let repos=[['atlas-web','A considered home for ideas, notes, and things worth sharing.',12,3,0,false,5,2],['design-system','Components, tokens, and a shared design language.',4,2,1,true,2,0],['pocket-journal','A small space for everyday thoughts.',0,1,2,true],['api-gateway','One entry point for the services behind the scenes.',8,2,3,true,3,1],['weekend-experiments','Little ideas that might turn into something.',3,0,5,false,1,0],['dotfiles','Making a new machine feel like home.',0,0,12,false],['old-portfolio','An earlier chapter, kept for the memories.',0,0,80,false]].map(([name,description,issues,milestones,days,isPrivate,ready=0,blocked=0])=>({name,description,issues,ready,blocked,milestones,isPrivate,updatedAt:new Date(Date.now()-days*DAY).toISOString(),owner:'demo',demo:true}));
 const demoRepos=repos.map(r=>({...r}));
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function relative(date){const d=Math.max(0,Math.floor((Date.now()-new Date(date))/DAY));return d===0?'Today':d===1?'Yesterday':d<30?`${d} days ago`:new Date(date).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'})}
-function render(){const q=$('search').value.trim().toLowerCase(),sort=$('sort').value;const list=repos.filter(r=>(filter==='all'||(filter==='private')===r.isPrivate)&&`${r.owner}/${r.name} ${r.description||''}`.toLowerCase().includes(q)).sort((a,b)=>sort==='name'?a.name.localeCompare(b.name):sort==='activity'?new Date(b.updatedAt)-new Date(a.updatedAt):(b[sort]??-1)-(a[sort]??-1));$('total').textContent=repos.length;for(const k of ['issues','milestones'])$(k).textContent=(repos.some(r=>r[k]===null)?'≥ ':'')+repos.reduce((n,r)=>n+(r[k]||0),0);$('active').textContent=repos.filter(r=>Date.now()-new Date(r.updatedAt)<7*DAY).length;$('count').textContent=repos.length;$('showing').textContent=`Showing ${list.length} of ${repos.length} repositories`;$('empty').hidden=!!list.length;$('rows').innerHTML=list.map(r=>`<tr><td><div class="repo-cell"><span class="repo-icon" aria-hidden="true">▤</span><div>${r.demo?`<span class="repo-name">${esc(r.name)}</span>`:`<a class="repo-name" href="${esc(r.url)}" target="_blank" rel="noopener noreferrer">${esc(r.name)}</a>`}<span class="owner">${esc(r.owner)}${r.isArchived?' · Archived':''}</span><div class="repo-description">${esc(r.description||'No description provided.')}</div></div></div></td><td><span class="metric ${r.issues===0?'zero':''}" title="Open issues, excluding pull requests">◉ <b>${r.issues??'—'}</b></span></td><td><span class="metric ${r.milestones===0?'zero':''}" title="Open milestones">⚑ <b>${r.milestones??'—'}</b></span></td><td><time class="activity ${Date.now()-new Date(r.updatedAt)<7*DAY?'recent':''}" datetime="${esc(r.updatedAt)}" title="Repository updated date: ${esc(new Date(r.updatedAt).toLocaleString())}">${relative(r.updatedAt)}</time></td><td><span class="visibility ${r.isPrivate?'private':''}">${r.isPrivate?'♙ Private':'⊕ Public'}</span></td><td>${r.demo?'':`<a class="external" href="${esc(r.url)}" target="_blank" rel="noopener noreferrer" aria-label="Open ${esc(r.name)} on GitHub">↗</a>`}</td></tr>`).join('')}
+function render(){const q=$('search').value.trim().toLowerCase(),sort=$('sort').value;const list=repos.filter(r=>(filter==='all'||(filter==='private')===r.isPrivate)&&`${r.owner}/${r.name} ${r.description||''}`.toLowerCase().includes(q)).sort((a,b)=>sort==='name'?a.name.localeCompare(b.name):sort==='activity'?new Date(b.updatedAt)-new Date(a.updatedAt):(b[sort]??-1)-(a[sort]??-1));$('total').textContent=repos.length;for(const k of ['issues','milestones'])$(k).textContent=(repos.some(r=>r[k]===null)?'≥ ':'')+repos.reduce((n,r)=>n+(r[k]||0),0);$('active').textContent=repos.filter(r=>Date.now()-new Date(r.updatedAt)<7*DAY).length;$('count').textContent=repos.length;$('showing').textContent=`Showing ${list.length} of ${repos.length} repositories`;$('empty').hidden=!!list.length;$('rows').innerHTML=list.map(r=>`<tr><td><div class="repo-cell"><span class="repo-icon" aria-hidden="true">▤</span><div>${r.demo?`<span class="repo-name">${esc(r.name)}</span>`:`<a class="repo-name" href="${esc(r.url)}" target="_blank" rel="noopener noreferrer">${esc(r.name)}</a>`}<span class="owner">${esc(r.owner)}${r.isArchived?' · Archived':''}</span><div class="repo-description">${esc(r.description||'No description provided.')}</div></div></div></td><td><span class="metric ${r.issues===0?'zero':''}" title="Open issues, excluding pull requests">◉ <b>${r.issues??'—'}</b></span><div class="issue-status">Ready <b>${r.ready??'—'}</b> · Blocked <b>${r.blocked??'—'}</b></div></td><td><span class="metric ${r.milestones===0?'zero':''}" title="Open milestones">⚑ <b>${r.milestones??'—'}</b></span></td><td><time class="activity ${Date.now()-new Date(r.updatedAt)<7*DAY?'recent':''}" datetime="${esc(r.updatedAt)}" title="Repository updated date: ${esc(new Date(r.updatedAt).toLocaleString())}">${relative(r.updatedAt)}</time></td><td><span class="visibility ${r.isPrivate?'private':''}">${r.isPrivate?'♙ Private':'⊕ Public'}</span></td><td>${r.demo?'':`<a class="external" href="${esc(r.url)}" target="_blank" rel="noopener noreferrer" aria-label="Open ${esc(r.name)} on GitHub">↗</a>`}</td></tr>`).join('')}
 function notice(message,error=false){$('notice').textContent=message;$('notice').classList.toggle('error',error)}
 // Accept a web hostname/origin, never a repository URL or API path.
 function githubHost(value){
@@ -22,10 +22,39 @@ try{const selected=githubHost($('domain').value);$('token-help').href=selected.o
 }
 async function request(path,options={}){const c=new AbortController(),timer=setTimeout(()=>c.abort(),25000);try{const res=await fetch(path==='/graphql'?host.graphql:host.rest+path,{...options,redirect:'error',credentials:'omit',signal:c.signal,headers:{Accept:'application/vnd.github+json',...(token?{Authorization:`Bearer ${token}`} :{}),...options.headers}});if(!res.ok)throw Error(res.status===401?'Invalid or expired GitHub token.':res.status===404?'Account or repository not found.':res.status===403||res.status===429?'GitHub access denied or rate limit reached. Check permissions or retry later.':`GitHub returned ${res.status}. Please try again.`);return await res.json()}catch(e){if(e.name==='TypeError')throw Error('Cannot reach the GitHub API. Check the domain, network or VPN, trusted HTTPS certificate, and server CORS policy for this dashboard.');throw e}finally{clearTimeout(timer)}}
 async function pages(path){const all=[];for(let p=1;;p++){const rows=await request(`${path}${path.includes('?')?'&':'?'}per_page=100&page=${p}`);all.push(...rows);if(rows.length<100)return all}}
+function repoPath(repo){
+  return `/repos/${encodeURIComponent(repo.owner)}/${encodeURIComponent(repo.name)}`;
+}
+
+function issueCounts(items){
+  const counts={issues:0,ready:0,blocked:0};
+  for(const issue of items){
+    if(issue.pull_request)continue;
+    counts.issues++;
+    const labels=(issue.labels||[]).flatMap(label=>label.name.toLowerCase().split(/[^\p{L}\p{N}]+/u));
+    if(labels.includes('ready'))counts.ready++;
+    if(labels.includes('blocked'))counts.blocked++;
+  }
+  return counts;
+}
+
+async function forEachRepo(repositories,visit){
+  let index=0;
+  await Promise.all(Array.from({length:Math.min(3,repositories.length)},async()=>{
+    while(index<repositories.length)await visit(repositories[index++]);
+  }));
+}
+
+function repositorySummary(all,login){
+  return {all,login,failed:all.filter(repo=>
+    [repo.issues,repo.ready,repo.blocked,repo.milestones].some(value=>value===null)
+  ).length};
+}
+
 async function authenticated(){
 const [profile,data]=await Promise.all([request('/user'),pages('/user/repos?visibility=all&affiliation=owner,collaborator,organization_member&sort=updated')]);
 const unique=[...new Map(data.map(r=>[r.id,r])).values()];
-const all=unique.map(r=>({id:r.node_id,name:r.name,description:r.description,url:r.html_url,isPrivate:r.private,isArchived:r.archived,owner:r.owner.login,updatedAt:r.updated_at,issues:null,milestones:null}));
+const all=unique.map(r=>({id:r.node_id,name:r.name,description:r.description,url:r.html_url,isPrivate:r.private,isArchived:r.archived,owner:r.owner.login,updatedAt:r.updated_at,issues:null,ready:null,blocked:null,milestones:null}));
 // Discover repositories independently: unavailable issue/milestone permissions must not hide them.
 for(let offset=0;offset<all.length;offset+=40){const batch=all.slice(offset,offset+40);try{
 const query=`query($ids:[ID!]!){nodes(ids:$ids){... on Repository{id issues(states:OPEN){totalCount} milestones(states:OPEN){totalCount}}}}`;
@@ -33,9 +62,31 @@ const response=await request('/graphql',{method:'POST',body:JSON.stringify({quer
 const nodes=new Map((response.data?.nodes||[]).filter(Boolean).map(r=>[r.id,r]));
 for(const repo of batch){const node=nodes.get(repo.id);repo.issues=node?.issues?.totalCount??null;repo.milestones=node?.milestones?.totalCount??null}
 }catch{/* Keep all discovered repositories, even when counts are inaccessible. */}}
-return {all,login:profile.login,failed:all.filter(r=>r.issues===null||r.milestones===null).length};}
-async function publicRepos(){const data=await pages(`/users/${encodeURIComponent(username)}/repos?sort=updated&type=owner`);let index=0,failed=0;const all=data.map(r=>({name:r.name,description:r.description,url:r.html_url,isPrivate:false,isArchived:r.archived,owner:r.owner.login,updatedAt:r.updated_at,issues:null,milestones:null}));await Promise.all(Array.from({length:Math.min(3,all.length)},async()=>{while(index<all.length){const r=all[index++];try{const base=`/repos/${encodeURIComponent(r.owner)}/${encodeURIComponent(r.name)}`;const [issues,milestones]=await Promise.all([pages(base+'/issues?state=open'),pages(base+'/milestones?state=open')]);r.issues=issues.filter(i=>!i.pull_request).length;r.milestones=milestones.length}catch{failed++}}}));return {all,login:username,failed}}
-async function load(){if(busy)return;busy=true;$('disconnect').disabled=true;$('refresh').disabled=true;$('submit').disabled=true;$('submit').textContent='Connecting…';notice('Fetching your repositories from GitHub…');try{const result=token?await authenticated():await publicRepos();repos=result.all;filter='all';$('search').value='';document.querySelectorAll('[data-filter]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.filter==='all')));mode=token?'token':'public';username=result.login;$('connection').textContent=`${token?'Token authenticated':'Public browsing'} · ${new URL(host.origin).host} · ${result.login}`;$('connect').textContent='Change account ↗';$('workspace').textContent=`${result.login}’s workspace`;$('workspace-sub').textContent=token?'Repositories available to your token':'Public repositories';$('updated').textContent=`Updated ${new Date().toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'})}`;notice(result.failed?'All discovered repositories are shown. Some counts are unavailable (—); totals are a lower bound. Check token read permissions or GitHub API limits.':token?'Live GitHub data · All repositories GitHub exposes to this token. Missing repos? Fine-grained tokens cover one resource owner; organization approval or SSO may also be required.':'Live public repositories · Connect a token to include private projects.');$('dialog').close();$('token').value='';render()}catch(e){$('form-error').textContent='Could not connect to GitHub: '+e.message;if(!$('dialog').open)$('dialog').showModal();notice(`${e.message} ${mode==='demo'?'Sample':'Previously loaded'} data is still displayed.`,true)}finally{busy=false;$('disconnect').disabled=false;$('disconnect').hidden=!(token||mode!=='demo');$('refresh').disabled=false;$('submit').disabled=false;$('submit').textContent='Open my workspace ↗'}}
+await forEachRepo(all,async repo=>{
+  if(repo.issues===0){
+    repo.ready=repo.blocked=0;
+    return;
+  }
+  try{
+    Object.assign(repo,issueCounts(await pages(repoPath(repo)+'/issues?state=open')));
+  }catch{/* Keep any totals the GraphQL request returned. */}
+});
+return repositorySummary(all,profile.login);
+}
+
+async function publicRepos(){
+  const data=await pages(`/users/${encodeURIComponent(username)}/repos?sort=updated&type=owner`);
+  const all=data.map(r=>({name:r.name,description:r.description,url:r.html_url,isPrivate:false,isArchived:r.archived,owner:r.owner.login,updatedAt:r.updated_at,issues:null,ready:null,blocked:null,milestones:null}));
+  await forEachRepo(all,async repo=>{
+    const base=repoPath(repo);
+    await Promise.allSettled([
+      pages(base+'/issues?state=open').then(items=>Object.assign(repo,issueCounts(items))),
+      pages(base+'/milestones?state=open').then(items=>{repo.milestones=items.length})
+    ]);
+  });
+  return repositorySummary(all,username);
+}
+async function load(){if(busy)return;busy=true;$('disconnect').disabled=true;$('refresh').disabled=true;$('submit').disabled=true;$('submit').textContent='Connecting…';notice('Fetching your repositories from GitHub…');try{const result=token?await authenticated():await publicRepos();repos=result.all;filter='all';$('search').value='';document.querySelectorAll('[data-filter]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.filter==='all')));mode=token?'token':'public';username=result.login;$('connection').textContent=`${token?'Token authenticated':'Public browsing'} · ${new URL(host.origin).host} · ${result.login}`;$('connect').textContent='Change account ↗';$('workspace').textContent=`${result.login}’s workspace`;$('workspace-sub').textContent=token?'Repositories available to your token':'Public repositories';$('updated').textContent=`Updated ${new Date().toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'})}`;notice(result.failed?'All discovered repositories are shown. Some counts are unavailable (—). A ≥ total includes only available counts. Check token read permissions or GitHub API limits.':token?'Live GitHub data · All repositories GitHub exposes to this token. Missing repos? Fine-grained tokens cover one resource owner; organization approval or SSO may also be required.':'Live public repositories · Connect a token to include private projects.');$('dialog').close();$('token').value='';render()}catch(e){$('form-error').textContent='Could not connect to GitHub: '+e.message;if(!$('dialog').open)$('dialog').showModal();notice(`${e.message} ${mode==='demo'?'Sample':'Previously loaded'} data is still displayed.`,true)}finally{busy=false;$('disconnect').disabled=false;$('disconnect').hidden=!(token||mode!=='demo');$('refresh').disabled=false;$('submit').disabled=false;$('submit').textContent='Open my workspace ↗'}}
 $('connect').onclick=()=>{$('form-error').textContent='';$('dialog').showModal()};$('close').onclick=()=>{if(!busy){$('dialog').close();$('token').value=''}};$('dialog').addEventListener('cancel',()=>{$('token').value=''});$('connection-form').onsubmit=e=>{e.preventDefault();if(busy)return;let selected;try{selected=githubHost($('domain').value)}catch(error){$('form-error').textContent=error.message;return}if(!$('token').value.trim()&&!$('username').value.trim()){$('form-error').textContent='Enter a token or GitHub username.';return}host=selected;token=$('token').value.trim();username=$('username').value.trim();load()};$('refresh').onclick=()=>mode==='demo'?$('dialog').showModal():load();$('search').oninput=render;$('sort').onchange=render;document.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{filter=b.dataset.filter;document.querySelectorAll('[data-filter]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));render()});render();
 
 function disconnect(){
